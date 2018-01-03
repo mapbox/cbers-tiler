@@ -1,0 +1,48 @@
+service: cbers-tiler
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: production
+
+  region: us-east-1
+
+  iamRoleStatements:
+  -  Effect: "Allow"
+     Action:
+       - "s3:GetObject"
+     Resource:
+       - "arn:aws:s3:::cbers-pds/*"
+
+  environment:
+    GDAL_CACHEMAX: 75%
+    GDAL_TIFF_OVR_BLOCKSIZE: 512
+    VSI_CACHE: TRUE
+    VSI_CACHE_SIZE: 536870912
+    GDAL_DISABLE_READDIR_ON_OPEN: true
+    CPL_VSIL_CURL_ALLOWED_EXTENSIONS: ".TIF"
+
+  #Optional Bucket where you store your lambda package
+  # deploymentBucket: {YOUR-BUCKET}
+
+custom:
+  apigwBinary:
+    types:
+      - '*/*'
+
+plugins:
+  - serverless-apigw-binary
+
+package:
+  artifact: package.zip
+
+functions:
+  cbers-tiler:
+    handler: app.cbers.CBERS_APP
+    memorySize: 1536
+    timeout: 20
+    events:
+      - http:
+          path: cbers/{proxy+}
+          method: get
+          cors: true
