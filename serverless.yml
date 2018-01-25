@@ -21,6 +21,7 @@ provider:
     VSI_CACHE_SIZE: 536870912
     GDAL_DISABLE_READDIR_ON_OPEN: true
     CPL_VSIL_CURL_ALLOWED_EXTENSIONS: ".TIF"
+    AWS_REQUEST_PAYER: "requester"
 
   #Optional Bucket where you store your lambda package
   # deploymentBucket: {YOUR-BUCKET}
