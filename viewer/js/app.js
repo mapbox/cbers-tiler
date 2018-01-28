@@ -1,12 +1,7 @@
 'use strict';
 
 mapboxgl.accessToken = '{YOUR-MAPBOX-TOKE}';
-const cbers_tiler_url = '{YOUR-ENDPOINT}' //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
-const sat_api = 'https://search.remotepixel.ca';
-
-const map_style = 'mapbox://styles/liporace/cjaeb9o9m61ij2rn0e09mf3db'
-const grid_vector_source = 'mapbox://vincentsarago.3a75bnx8'
-const highlighted_selected_layer = 'cbers_grid-41mvmk'
+const cbers_services = '{YOUR-ENDPOINT}' //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
 
 let scope = {};
 
@@ -36,7 +31,7 @@ const buildQueryAndRequestCBERS = (features) => {
     Promise.all(features.map(e => {
       const row = zeroPad(e.properties.ROW, 3);
       const path = zeroPad(e.properties.PATH, 3);
-      const query = `${sat_api}/cbers?row=${row}&path=${path}`;
+      const query = `${cbers_services}/search?row=${row}&path=${path}`;
 
       return $.getJSON(query).done()
         .then(data => {
@@ -56,8 +51,9 @@ const buildQueryAndRequestCBERS = (features) => {
         scene.path = data[i].path;
         scene.row = data[i].row;
         scene.date = data[i].acquisition_date;
-        scene.browseURL = data[i].browseURL;
+        scene.thumbURL = data[i].thumbURL;
         scene.scene_id = data[i].scene_id;
+        scene.type = data[i].processing_level;
         results.push(scene);
       }
       results.sort(sortScenes);
@@ -67,7 +63,7 @@ const buildQueryAndRequestCBERS = (features) => {
           $('.list-img').append(
             '<div class="list-element" onclick="initScene(\'' + results[i].scene_id + '\',\'' + results[i].date + '\')">' +
               '<div class="block-info">' +
-                '<img "class="img-item lazy lazyload" src="' + results[i].browseURL + '">' +
+                '<img "class="img-item lazy lazyload" src="' + results[i].thumbURL + '">' +
               '</div>' +
               '<div class="block-info">' +
                 '<span class="scene-info">' + results[i].scene_id + '</span>' +
@@ -91,7 +87,7 @@ const initScene = (sceneID, sceneDate) => {
 
     let min = $("#minCount").val();
     let max = $("#maxCount").val();
-    const query = `${cbers_tiler_url}/cbers/metadata/${sceneID}?'pmim=${min}&pmax=${max}`;
+    const query = `${cbers_services}/metadata/${sceneID}?'pmim=${min}&pmax=${max}`;
 
     $.getJSON(query, (data) => {
         scope.imgMetadata = data;
@@ -129,7 +125,7 @@ const updateRasterTile = () => {
     // to get 256x256px reduces the number of lambda calls (but they are faster)
     // and reduce the quality because MapboxGl will oversample the tile.
 
-    const tileURL = `${cbers_tiler_url}/tiles/${meta.sceneid}/{z}/{x}/{y}.png?` +
+    const tileURL = `${cbers_services}/tiles/${meta.sceneid}/{z}/{x}/{y}.png?` +
         `rgb=${rgb}` +
         '&tile=256' +
         `&histo${meta.rgbMinMax[bands[0]]}-${meta.rgbMinMax[bands[1]]}-${meta.rgbMinMax[bands[2]]}`;
@@ -195,7 +191,7 @@ document.getElementById("btn-clear").onclick = () => {
 
 var map = new mapboxgl.Map({
     container: 'map',
-    style: map_style,
+    style: 'mapbox://styles/mapbox/satellite-streets-v9',
     center: [-70.50, 0],
     zoom: 3,
     attributionControl: true,
@@ -207,7 +203,7 @@ map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
 map.on('mousemove', (e) => {
 
-    const features = map.queryRenderedFeatures(e.point, {layers: ['satellite-pathrow']});
+    const features = map.queryRenderedFeatures(e.point, {layers: ['Grid']});
 
     let pr = ['in', 'PATH', ''];
 
@@ -223,7 +219,7 @@ map.on('mousemove', (e) => {
 map.on('click', (e) => {
     $('.right-panel').addClass('in');
     $('.spin').removeClass('none');
-    const features = map.queryRenderedFeatures(e.point, {layers: ['satellite-pathrow']});
+    const features = map.queryRenderedFeatures(e.point, {layers: ['Grid']});
 
     if (features.length !== 0) {
         $('.map').addClass('in');
@@ -257,33 +253,51 @@ map.on('load', () => {
 
     map.addSource('reference_grid', {
         'type': 'vector',
-        'url': grid_vector_source
+        'url': 'mapbox://vincentsarago.3a75bnx8'
     });
+
+    map.addLayer({
+        'id': 'Grid',
+        'type': 'fill',
+        'source': 'reference_grid',
+        'source-layer': 'cbers_grid-41mvmk',
+        'paint': {
+            'fill-color': 'hsla(0, 0%, 0%, 0)',
+            'fill-outline-color': {
+                'base': 1,
+                'stops': [
+                    [0, 'hsla(207, 84%, 57%, 0.24)'],
+                    [22, 'hsl(207, 84%, 57%)']
+                ]
+            },
+            'fill-opacity': 1
+        }
+    }, 'admin-2-boundaries-bg');
 
     map.addLayer({
         'id': 'PR_Highlighted',
         'type': 'fill',
         'source': 'reference_grid',
-        'source-layer': highlighted_selected_layer,
+        'source-layer': 'cbers_grid-41mvmk',
         'paint': {
             'fill-outline-color': '#1386af',
             'fill-color': '#0f6d8e',
             'fill-opacity': 0.3
         },
         'filter': ['in', 'PATH', '']
-    });
+    }, 'admin-2-boundaries-bg');
 
     map.addLayer({
         'id': 'PR_Selected',
         'type': 'line',
         'source': 'reference_grid',
-        'source-layer': highlighted_selected_layer,
+        'source-layer': 'cbers_grid-41mvmk',
         'paint': {
             'line-color': '#000',
             'line-width': 1
         },
         'filter': ['in', 'PATH', '']
-    });
+    }, 'admin-2-boundaries-bg');
 
     $('.loading-map').addClass('off');
 });
