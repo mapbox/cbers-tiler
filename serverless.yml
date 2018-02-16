@@ -39,7 +39,7 @@ package:
 
 functions:
   cbers-tiler:
-    handler: app.cbers.CBERS_APP
+    handler: app.cbers.APP
     memorySize: 1536
     timeout: 20
     events:
