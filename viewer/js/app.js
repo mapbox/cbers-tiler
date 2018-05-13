@@ -1,7 +1,7 @@
 'use strict';
 
-mapboxgl.accessToken = '{YOUR-MAPBOX-TOKE}';
-const cbers_services = '{YOUR-ENDPOINT}' //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
+mapboxgl.accessToken = '{YOUR-MAPBOX-TOKEN}';
+const cbers_services = 'https://gk4ai2v1m3.execute-api.us-east-1.amazonaws.com/production/cbers' //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
 
 let scope = {};
 
@@ -31,7 +31,7 @@ const buildQueryAndRequestCBERS = (features) => {
     Promise.all(features.map(e => {
       const row = zeroPad(e.properties.ROW, 3);
       const path = zeroPad(e.properties.PATH, 3);
-      const query = `${cbers_services}/search?row=${row}&path=${path}`;
+      const query = `${cbers_services}/search?row=${row}&path=${path}&sensor=${selectedsensor}`;
 
       return $.getJSON(query).done()
         .then(data => {
@@ -108,6 +108,32 @@ const initScene = (sceneID, sceneDate) => {
         });
 };
 
+const clear = () => {
+  if (map.getLayer('cbers-tiles')) map.removeLayer('cbers-tiles');
+  if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
+  map.setFilter("PR_Highlighted", ["in", "PATH", ""]);
+  map.setFilter("PR_Selected", ["in", "PATH", ""]);
+
+  $('.list-img').scrollLeft(0);
+  $('.list-img').empty();
+
+  $(".metaloader").addClass('off');
+  $('.errorMessage').addClass('none');
+  $(".cbers-info span").text('');
+  $(".cbers-info").addClass('none');
+
+  scope = {};
+
+  $("#minCount").val(5);
+  $("#maxCount").val(95);
+
+  $(".img-display-options .toggle-group input").prop('checked', false);
+  $(".img-display-options .toggle-group input[data='natural_rgb']").prop('checked', true);
+
+  $('.map').removeClass('in');
+  $('.right-panel').removeClass('in');
+  map.resize();
+}
 
 const updateRasterTile = () => {
     if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
@@ -115,7 +141,8 @@ const updateRasterTile = () => {
 
     let meta = scope.imgMetadata;
 
-    let rgb = $(".img-display-options .toggle-group input:checked").attr("data");
+    //let rgb = $(".img-display-options .toggle-group input:checked").attr("data");
+    let rgb = sensor[selectedsensor][$(".img-display-options .toggle-group input:checked").attr("data")];
     const bands = rgb.split(',');
 
     // NOTE: Calling 512x512px tiles is a bit longer but gives a
@@ -160,31 +187,13 @@ $(".img-display-options .toggle-group").change(() => {
     if (map.getSource('cbers-tiles')) updateRasterTile();
 });
 
+$(".img-display-options .stoggle-group").change(() => {
+    selectedsensor = $(".img-display-options .stoggle-group input:checked").attr("data");
+    clear(); 
+});
+
 document.getElementById("btn-clear").onclick = () => {
-  if (map.getLayer('cbers-tiles')) map.removeLayer('cbers-tiles');
-  if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
-  map.setFilter("PR_Highlighted", ["in", "PATH", ""]);
-  map.setFilter("PR_Selected", ["in", "PATH", ""]);
-
-  $('.list-img').scrollLeft(0);
-  $('.list-img').empty();
-
-  $(".metaloader").addClass('off');
-  $('.errorMessage').addClass('none');
-  $(".cbers-info span").text('');
-  $(".cbers-info").addClass('none');
-
-  scope = {};
-
-  $("#minCount").val(5);
-  $("#maxCount").val(95);
-
-  $(".img-display-options .toggle-group input").prop('checked', false);
-  $(".img-display-options .toggle-group input[data='7,6,5']").prop('checked', true);
-
-  $('.map').removeClass('in');
-  $('.right-panel').removeClass('in');
-  map.resize();
+    clear();
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -301,3 +310,27 @@ map.on('load', () => {
 
     $('.loading-map').addClass('off');
 });
+
+/// CBERS-4 sensor configuration
+
+var sensor = {
+    'MUX': {
+        'natural_rgb': '7,6,5',
+        'false_rgb': '8,6,7'
+    },
+    'AWFI': {
+        'natural_rgb': '15,14,13',
+        'false_rgb': '16,14,15'
+    },
+    'PAN10M': {
+        'natural_rgb': '3,4,2',
+        'false_rgb': '3,2,4'
+    },
+    'PAN5M': {
+        'natural_rgb': '1,1,1',
+        'false_rgb': '1,1,1'
+    }    
+};
+
+var selectedsensor = $(".img-display-options .stoggle-group input:checked").attr("data");
+

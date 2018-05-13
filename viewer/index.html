@@ -26,20 +26,41 @@
 					<div class="list-img"></div>
 
 					<div class="img-display-options">
+						<span>Sensor</span>
+
+						<div class='stoggle-group mr18'>
+							<label class='toggle-container'>
+								<input data="MUX" checked name='stoggle' type='radio'/>
+								<div class='btn btn--stroke btn--darken50 toggle'>MUX</div>
+							</label>
+							<label class='toggle-container'>
+								<input data="AWFI" name='stoggle' type='radio' />
+								<div class='btn btn--stroke btn--darken50 toggle'>AWFI</div>
+							</label>
+							<label class='toggle-container'>
+								<input data="PAN10M" name='stoggle' type='radio' />
+								<div class='btn btn--stroke btn--darken50 toggle'>PAN10M</div>
+							</label>
+							<label class='toggle-container'>
+								<input data="PAN5M" name='stoggle' type='radio' />
+								<div class='btn btn--stroke btn--darken50 toggle'>PAN5M</div>
+							</label>
+						</div>
+
 						<span>RGB Combination </span>
 
 						<div class='toggle-group mr18'>
 							<label class='toggle-container'>
-								<input data="7,6,5" checked name='toggle' type='radio'/>
+								<input data="natural_rgb" checked name='toggle' type='radio'/>
 								<div class='btn btn--stroke btn--darken50 toggle'>natural color</div>
 							</label>
 							<label class='toggle-container'>
-								<input data="8,6,7" name='toggle' type='radio' />
+								<input data="false_rgb" name='toggle' type='radio' />
 								<div class='btn btn--stroke btn--darken50 toggle'>false color</div>
 							</label>
 						</div>
 
-						<span>Histogramm cut </span>
+						<span>Histogram cut </span>
 
 						<div class="inputHisto">
 							<input id="minCount" class='input col--2' value='5' />
