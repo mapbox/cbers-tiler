@@ -1,7 +1,7 @@
 'use strict';
 
 mapboxgl.accessToken = '{YOUR-MAPBOX-TOKEN}';
-const cbers_services = 'https://gk4ai2v1m3.execute-api.us-east-1.amazonaws.com/production/cbers' //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
+const cbers_services = '{YOUR-ENDPOINT}' //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
 
 let scope = {};
 
@@ -23,6 +23,11 @@ const buildQueryAndRequestCBERS = (features) => {
     $('.errorMessage').addClass('none');
     $('.cbers-info').addClass('none');
 
+    // Adjust color combinations buttons for selected sensor
+    $(".img-display-options .toggle-group input[data='natural_rgb']").prop('checked', true);
+    $(".img-display-options .toggle-group input[data='natural_rgb']")[0].nextSibling.nextSibling.innerHTML = sensor[selectedsensor]['button_1']
+    $(".img-display-options .toggle-group input[data='false_rgb']")[0].nextSibling.nextSibling.innerHTML = sensor[selectedsensor]['button_2']
+    
     if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
     if (map.getLayer('cbers-tiles')) map.removeLayer('cbers-tiles');
 
@@ -148,7 +153,7 @@ const updateRasterTile = () => {
     // NOTE: Calling 512x512px tiles is a bit longer but gives a
     // better quality image and reduce the number of tiles requested
 
-    // HACK: Trade-off between quality and speed. Setting source.tileSize to 512 and telling landsat-tiler
+    // HACK: Trade-off between quality and speed. Setting source.tileSize to 512 and telling tiler
     // to get 256x256px reduces the number of lambda calls (but they are faster)
     // and reduce the quality because MapboxGl will oversample the tile.
 
@@ -316,19 +321,27 @@ map.on('load', () => {
 var sensor = {
     'MUX': {
         'natural_rgb': '7,6,5',
-        'false_rgb': '8,6,7'
+        'false_rgb': '8,6,7',
+        'button_1': 'natural color',
+        'button_2': 'false color'
     },
     'AWFI': {
         'natural_rgb': '15,14,13',
-        'false_rgb': '16,14,15'
+        'false_rgb': '16,14,15',
+        'button_1': 'natural color',
+        'button_2': 'false color'
     },
     'PAN10M': {
         'natural_rgb': '3,4,2',
-        'false_rgb': '3,2,4'
+        'false_rgb': '4,2,3',
+        'button_1': 'red,green,nir',
+        'button_2': 'false color'
     },
     'PAN5M': {
         'natural_rgb': '1,1,1',
-        'false_rgb': '1,1,1'
+        'false_rgb': '1,1,1',
+        'button_1': 'gray',
+        'button_2': ''
     }    
 };
 

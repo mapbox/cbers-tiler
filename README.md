@@ -8,7 +8,7 @@ This project is based on [rio-tiler](https://github.com/mapbox/rio-tiler) python
 
 #### CBERS-4 data on AWS
 
-Hosted since late 2017 on AWS, CBERS-4 data offers an alternative to cbers and Sentinel data (https://aws.amazon.com/fr/blogs/publicsector/the-china-brazil-earth-resources-satellite-mission/).
+Hosted since late 2017, [CBERS-4 data on AWS](https://registry.opendata.aws/cbers/) offers an alternative to cbers and Sentinel data (https://aws.amazon.com/fr/blogs/publicsector/the-china-brazil-earth-resources-satellite-mission/).
 
 > China–Brazil Earth Resources Satellite 4 (CBERS-4), also known as Ziyuan I-04 or Ziyuan 1E, is a remote sensing satellite intended for operation as part of the China–Brazil Earth Resources Satellite programme between the China Centre for Resources Satellite Data and Application and Brazil's National Institute for Space Research. The fifth CBERS satellite to fly, it was successfully launched on 7 December 2014. It replaces CBERS-3 which was lost in a launch failure in December 2013.
 
