@@ -1,7 +1,7 @@
 'use strict';
 
-mapboxgl.accessToken = 'pk.eyJ1IjoibGlwb3JhY2UiLCJhIjoiY2phY2x2YmF0MGJleTJxb2lmcmJ6a2M4OCJ9.Ujv28eGwfPYxLkKeHCzjzg';
-const cbers_services = 'https://gk4ai2v1m3.execute-api.us-east-1.amazonaws.com/production/cbers'; //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
+mapboxgl.accessToken = '{YOUR-MAPBOX-TOKEN}';
+const cbers_services = '{YOUR-ENDPOINT}' //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
 
 let scope = {};
 
