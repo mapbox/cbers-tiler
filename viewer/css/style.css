@@ -137,6 +137,14 @@ body {
   display: inline-block;
 }
 
+.img-display-options .stoggle-group {
+  display: block;
+}
+
+.img-display-options .stoggle-group * {
+  display: inline-block;
+}
+
 .img-display-options .toggle {
   font-size: 10px;
   color: #000;

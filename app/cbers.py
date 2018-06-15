@@ -29,10 +29,11 @@ def search():
 
     path = query_args['path']
     row = query_args['row']
+    sensor = query_args['sensor']
 
-    data = list(cbers_search(path, row))
+    data = list(cbers_search(path, row, sensor))
     info = {
-        'request': {'path': path, 'row': row},
+        'request': {'path': path, 'row': row, 'sensor': sensor},
         'meta': {'found': len(data)},
         'results': data}
 

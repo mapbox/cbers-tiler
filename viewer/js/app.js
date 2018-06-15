@@ -1,6 +1,6 @@
 'use strict';
 
-mapboxgl.accessToken = '{YOUR-MAPBOX-TOKE}';
+mapboxgl.accessToken = '{YOUR-MAPBOX-TOKEN}';
 const cbers_services = '{YOUR-ENDPOINT}' //e.g https://xxxxxxxxxx.execute-api.xxxxxxx.amazonaws.com/production/cbers
 
 let scope = {};
@@ -23,15 +23,20 @@ const buildQueryAndRequestCBERS = (features) => {
     $('.errorMessage').addClass('none');
     $('.cbers-info').addClass('none');
 
-    if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
+    // Adjust color combinations buttons for selected sensor
+    $(".img-display-options .toggle-group input[data='natural_rgb']").prop('checked', true);
+    $(".img-display-options .toggle-group input[data='natural_rgb']")[0].nextSibling.nextSibling.innerHTML = sensor[selectedsensor]['button_1']
+    $(".img-display-options .toggle-group input[data='false_rgb']")[0].nextSibling.nextSibling.innerHTML = sensor[selectedsensor]['button_2']
+    
     if (map.getLayer('cbers-tiles')) map.removeLayer('cbers-tiles');
+    if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
 
     const results = [];
 
     Promise.all(features.map(e => {
       const row = zeroPad(e.properties.ROW, 3);
       const path = zeroPad(e.properties.PATH, 3);
-      const query = `${cbers_services}/search?row=${row}&path=${path}`;
+      const query = `${cbers_services}/search?row=${row}&path=${path}&sensor=${selectedsensor}`;
 
       return $.getJSON(query).done()
         .then(data => {
@@ -97,8 +102,8 @@ const initScene = (sceneID, sceneDate) => {
         $('.cbers-info .l8date').text(sceneDate);
     })
         .fail(() => {
-            if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
             if (map.getLayer('cbers-tiles')) map.removeLayer('cbers-tiles');
+            if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
             $('.cbers-info span').text('');
             $('.cbers-info').addClass('none');
             $('.errorMessage').removeClass('none');
@@ -108,6 +113,33 @@ const initScene = (sceneID, sceneDate) => {
         });
 };
 
+const clear = () => {
+  if (map.getLayer('cbers-tiles')) map.removeLayer('cbers-tiles');
+  if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
+  map.setFilter("PR_Highlighted", ["in", "PATH", ""]);
+  map.setFilter("PR_Selected", ["in", "PATH", ""]);
+
+  $('.list-img').scrollLeft(0);
+  $('.list-img').empty();
+
+  $(".metaloader").addClass('off');
+  $('.errorMessage').addClass('none');
+  $(".cbers-info span").text('');
+  $(".cbers-info").addClass('none');
+
+  scope = {};
+
+  $("#minCount").val(5);
+  $("#maxCount").val(95);
+
+  $(".img-display-options .toggle-group input").prop('checked', false);
+  $(".img-display-options .toggle-group input[data='natural_rgb']").prop('checked', true);
+
+  $('.map').removeClass('in');
+  $('.right-panel').removeClass('in');
+
+  map.resize();
+}
 
 const updateRasterTile = () => {
     if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
@@ -115,13 +147,14 @@ const updateRasterTile = () => {
 
     let meta = scope.imgMetadata;
 
-    let rgb = $(".img-display-options .toggle-group input:checked").attr("data");
+    //let rgb = $(".img-display-options .toggle-group input:checked").attr("data");
+    let rgb = sensor[selectedsensor][$(".img-display-options .toggle-group input:checked").attr("data")];
     const bands = rgb.split(',');
 
     // NOTE: Calling 512x512px tiles is a bit longer but gives a
     // better quality image and reduce the number of tiles requested
 
-    // HACK: Trade-off between quality and speed. Setting source.tileSize to 512 and telling landsat-tiler
+    // HACK: Trade-off between quality and speed. Setting source.tileSize to 512 and telling tiler
     // to get 256x256px reduces the number of lambda calls (but they are faster)
     // and reduce the quality because MapboxGl will oversample the tile.
 
@@ -149,6 +182,65 @@ const updateRasterTile = () => {
     });
 };
 
+const updateReferenceGrid = () => {
+
+    if (map.getLayer('cbers-tiles')) map.removeLayer('cbers-tiles');
+    if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
+
+    if (map.getLayer('Grid')) map.removeLayer('Grid');
+    if (map.getLayer('PR_Highlighted')) map.removeLayer('PR_Highlighted');
+    if (map.getLayer('PR_Selected')) map.removeLayer('PR_Selected');
+    if (map.getSource('reference_grid')) map.removeSource('reference_grid');
+
+    map.addSource('reference_grid', {
+        'type': 'vector',
+        'url': sensor[selectedsensor]['url']
+    });
+    
+    map.addLayer({
+        'id': 'Grid',
+        'type': 'fill',
+        'source': 'reference_grid',
+        'source-layer': sensor[selectedsensor]['source_layer'],
+        'paint': {
+            'fill-color': 'hsla(0, 0%, 0%, 0)',
+            'fill-outline-color': {
+                'base': 1,
+                'stops': [
+                    [0, 'hsla(207, 84%, 57%, 0.24)'],
+                    [22, 'hsl(207, 84%, 57%)']
+                ]
+            },
+            'fill-opacity': 1
+        }
+    }, 'admin-2-boundaries-bg');
+
+    map.addLayer({
+        'id': 'PR_Highlighted',
+        'type': 'fill',
+        'source': 'reference_grid',
+        'source-layer': sensor[selectedsensor]['source_layer'],
+        'paint': {
+            'fill-outline-color': '#1386af',
+            'fill-color': '#0f6d8e',
+            'fill-opacity': 0.3
+        },
+        'filter': ['in', 'PATH', '']
+    }, 'admin-2-boundaries-bg');
+
+    map.addLayer({
+        'id': 'PR_Selected',
+        'type': 'line',
+        'source': 'reference_grid',
+        'source-layer': sensor[selectedsensor]['source_layer'],
+        'paint': {
+            'line-color': '#000',
+            'line-width': 1
+        },
+        'filter': ['in', 'PATH', '']
+    }, 'admin-2-boundaries-bg');
+    
+};
 
 const updateMetadata = () => {
     if (!map.getSource('cbers-tiles')) return;
@@ -160,31 +252,14 @@ $(".img-display-options .toggle-group").change(() => {
     if (map.getSource('cbers-tiles')) updateRasterTile();
 });
 
+$(".img-display-options .stoggle-group").change(() => {
+    selectedsensor = $(".img-display-options .stoggle-group input:checked").attr("data");
+    clear();
+    updateReferenceGrid();
+});
+
 document.getElementById("btn-clear").onclick = () => {
-  if (map.getLayer('cbers-tiles')) map.removeLayer('cbers-tiles');
-  if (map.getSource('cbers-tiles')) map.removeSource('cbers-tiles');
-  map.setFilter("PR_Highlighted", ["in", "PATH", ""]);
-  map.setFilter("PR_Selected", ["in", "PATH", ""]);
-
-  $('.list-img').scrollLeft(0);
-  $('.list-img').empty();
-
-  $(".metaloader").addClass('off');
-  $('.errorMessage').addClass('none');
-  $(".cbers-info span").text('');
-  $(".cbers-info").addClass('none');
-
-  scope = {};
-
-  $("#minCount").val(5);
-  $("#maxCount").val(95);
-
-  $(".img-display-options .toggle-group input").prop('checked', false);
-  $(".img-display-options .toggle-group input[data='7,6,5']").prop('checked', true);
-
-  $('.map').removeClass('in');
-  $('.right-panel').removeClass('in');
-  map.resize();
+    clear();
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -195,7 +270,7 @@ var map = new mapboxgl.Map({
     center: [-70.50, 0],
     zoom: 3,
     attributionControl: true,
-    minZoom: 3,
+    minZoom: 0,
     maxZoom: 14
 });
 
@@ -251,53 +326,46 @@ map.on('click', (e) => {
 
 map.on('load', () => {
 
-    map.addSource('reference_grid', {
-        'type': 'vector',
-        'url': 'mapbox://vincentsarago.3a75bnx8'
-    });
-
-    map.addLayer({
-        'id': 'Grid',
-        'type': 'fill',
-        'source': 'reference_grid',
-        'source-layer': 'cbers_grid-41mvmk',
-        'paint': {
-            'fill-color': 'hsla(0, 0%, 0%, 0)',
-            'fill-outline-color': {
-                'base': 1,
-                'stops': [
-                    [0, 'hsla(207, 84%, 57%, 0.24)'],
-                    [22, 'hsl(207, 84%, 57%)']
-                ]
-            },
-            'fill-opacity': 1
-        }
-    }, 'admin-2-boundaries-bg');
-
-    map.addLayer({
-        'id': 'PR_Highlighted',
-        'type': 'fill',
-        'source': 'reference_grid',
-        'source-layer': 'cbers_grid-41mvmk',
-        'paint': {
-            'fill-outline-color': '#1386af',
-            'fill-color': '#0f6d8e',
-            'fill-opacity': 0.3
-        },
-        'filter': ['in', 'PATH', '']
-    }, 'admin-2-boundaries-bg');
-
-    map.addLayer({
-        'id': 'PR_Selected',
-        'type': 'line',
-        'source': 'reference_grid',
-        'source-layer': 'cbers_grid-41mvmk',
-        'paint': {
-            'line-color': '#000',
-            'line-width': 1
-        },
-        'filter': ['in', 'PATH', '']
-    }, 'admin-2-boundaries-bg');
-
+    updateReferenceGrid();
     $('.loading-map').addClass('off');
 });
+
+/// CBERS-4 sensor configuration
+
+var sensor = {
+    'MUX': {
+        'natural_rgb': '7,6,5',
+        'false_rgb': '8,6,7',
+        'button_1': 'natural color',
+        'button_2': 'false color',
+        'url': 'mapbox://liporace.2osjfg3d',
+        'source_layer': 'grid-ccb8tn'
+    },
+    'AWFI': {
+        'natural_rgb': '15,14,13',
+        'false_rgb': '16,14,15',
+        'button_1': 'natural color',
+        'button_2': 'false color',
+        'url': 'mapbox://liporace.dd0rzf3e',
+        'source_layer': 'awfi_grid-0rixvf'
+    },
+    'PAN10M': {
+        'natural_rgb': '3,4,2',
+        'false_rgb': '4,2,3',
+        'button_1': 'red,green,nir',
+        'button_2': 'false color',
+        'url': 'mapbox://liporace.djaooanl',
+        'source_layer': 'pan10m_grid-1pt472'
+    },
+    'PAN5M': {
+        'natural_rgb': '1,1,1',
+        'false_rgb': '1,1,1',
+        'button_1': 'gray',
+        'button_2': '',
+        'url': 'mapbox://liporace.c52fs3s7',
+        'source_layer': 'pan5m_grid-ccw3gd'
+    }
+};
+
+var selectedsensor = $(".img-display-options .stoggle-group input:checked").attr("data");
+
