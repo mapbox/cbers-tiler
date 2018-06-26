@@ -2,7 +2,7 @@
 
 ### Description
 
-Create a highly customizable `serverless` tile server for CBERS-4 AWS Public Public Dataset.
+Create a highly customizable `serverless` tile server for CBERS-4 AWS Public Dataset.
 This project is based on [rio-tiler](https://github.com/mapbox/rio-tiler) python library.
 
 
